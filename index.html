@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>404 — Page Not Found</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { width: 100%; height: 100%; }
+
+  .page {
+    width: 100%;
+    height: 100vh;
+    background: #000;
+    overflow-x: hidden;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    position: relative;
+    font-family: system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+  }
+
+  /* ---- Message ---- */
+  .message {
+    position: absolute;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    width: 90%;
+    height: 90%;
+    z-index: 100;
+  }
+  .message-inner {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    opacity: 0;
+    transition: opacity 0.5s ease;
+  }
+  .message-inner.visible { opacity: 1; }
+
+  .title  { font-size: 35px; font-weight: 600; color: #000; margin: 1%; }
+  .code   { font-size: 80px; font-weight: 700; color: #000; margin: 1%; }
+  .desc   { font-size: 15px; width: 50%; min-width: 40%; text-align: center; color: #000; margin: 1%; }
+
+  .actions { display: flex; gap: 24px; margin-top: 32px; }
+  .btn {
+    display: flex; align-items: center; gap: 8px;
+    padding: 8px 24px; font-size: 16px; font-weight: 500; cursor: pointer;
+    transition: all 0.3s ease-in-out;
+    border: 2px solid #000; background: transparent; color: #000;
+  }
+  .btn:hover { transform: scale(1.05); }
+  .btn-outline:hover { background: #000; color: #fff; }
+  .btn-solid { background: #000; color: #fff; }
+  .btn-solid:hover { background: #111; }
+
+  /* ---- Characters layer ---- */
+  .characters-layer {
+    position: absolute;
+    width: 99%;
+    height: 95%;
+  }
+  .characters { position: absolute; width: 18%; height: 18%; }
+
+  /* ---- Canvas ---- */
+  canvas { width: 100%; height: 100%; }
+</style>
+</head>
+<body>
+  <div class="page">
+    <!-- 1. Message -->
+    <div class="message">
+      <div class="message-inner" id="messageInner">
+        <div class="title">Page Not Found</div>
+        <div class="code">404</div>
+        <div class="desc">The page you are looking for might have been removed, had its name changed, or is temporarily unavailable.</div>
+      </div>
+    </div>
+
+    <!-- 2. Characters -->
+    <div class="characters-layer" id="charactersLayer"></div>
+
+    <!-- 3. Circles -->
+    <canvas id="circleCanvas"></canvas>
+  </div>
+
+<script>
+  // ---- 1. Message fade-in ----
+  setTimeout(function () {
+    document.getElementById('messageInner').classList.add('visible');
+  }, 1200);
+
+  // ---- 2. Characters animation ----
+  (function () {
+    var layer = document.getElementById('charactersLayer');
+    var base = 'https://raw.githubusercontent.com/RicardoYare/imagenes/9ef29f5bbe075b1d1230a996d87bca313b9b6a63/sticks/';
+    var stickFigures = [
+      { top: '0%',    src: base + 'stick0.svg', transform: 'rotateZ(-90deg)', speedX: 1500 },
+      { top: '10%',   src: base + 'stick1.svg', speedX: 3000, speedRotation: 2000 },
+      { top: '20%',   src: base + 'stick2.svg', speedX: 5000, speedRotation: 1000 },
+      { top: '25%',   src: base + 'stick0.svg', speedX: 2500, speedRotation: 1500 },
+      { top: '35%',   src: base + 'stick0.svg', speedX: 2000, speedRotation: 300 },
+      { bottom: '5%', src: base + 'stick3.svg', speedX: 0 }
+    ];
+
+    function build() {
+      layer.innerHTML = '';
+      stickFigures.forEach(function (figure, index) {
+        var stick = document.createElement('img');
+        stick.className = 'characters';
+        if (figure.top)    stick.style.top = figure.top;
+        if (figure.bottom) stick.style.bottom = figure.bottom;
+        stick.src = figure.src;
+        if (figure.transform) stick.style.transform = figure.transform;
+        layer.appendChild(stick);
+
+        if (index === 5) return; // last one stays put
+        stick.animate(
+          [{ left: '100%' }, { left: '-20%' }],
+          { duration: figure.speedX, easing: 'linear', fill: 'forwards' }
+        );
+        if (index === 0) return; // first one doesn't rotate
+        if (figure.speedRotation) {
+          stick.animate(
+            [{ transform: 'rotate(0deg)' }, { transform: 'rotate(-360deg)' }],
+            { duration: figure.speedRotation, iterations: Infinity, easing: 'linear' }
+          );
+        }
+      });
+    }
+
+    build();
+    window.addEventListener('resize', build);
+  })();
+
+  // ---- 3. Circle (canvas) animation ----
+  (function () {
+    var canvas = document.getElementById('circleCanvas');
+    var ctx = canvas.getContext('2d');
+    var circulos = [];
+    var timer = 0;
+    var requestId;
+
+    function initArr() {
+      circulos = [];
+      for (var i = 0; i < 300; i++) {
+        var randomX = Math.floor(Math.random() * ((canvas.width * 3) - (canvas.width * 1.2) + 1)) + (canvas.width * 1.2);
+        var randomY = Math.floor(Math.random() * (canvas.height - (canvas.height * (-0.2) + 1))) + (canvas.height * (-0.2));
+        var size = canvas.width / 1000;
+        circulos.push({ x: randomX, y: randomY, size: size });
+      }
+    }
+
+    function draw() {
+      timer++;
+      ctx.setTransform(1, 0, 0, 1, 0, 0);
+      var distanceX = canvas.width / 80;
+      var growthRate = canvas.width / 1000;
+      ctx.fillStyle = 'white';
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      circulos.forEach(function (c) {
+        ctx.beginPath();
+        if (timer < 65) {
+          c.x -= distanceX;
+          c.size += growthRate;
+        }
+        if (timer > 65 && timer < 500) {
+          c.x -= distanceX * 0.02;
+          c.size += growthRate * 0.2;
+        }
+        ctx.arc(c.x, c.y, c.size, 0, Math.PI * 2);
+        ctx.fill();
+      });
+
+      if (timer > 500) {
+        if (requestId) cancelAnimationFrame(requestId);
+        return;
+      }
+      requestId = requestAnimationFrame(draw);
+    }
+
+    function start() {
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+      timer = 0;
+      if (requestId) cancelAnimationFrame(requestId);
+      ctx.setTransform(1, 0, 0, 1, 0, 0);
+      initArr();
+      draw();
+    }
+
+    start();
+    window.addEventListener('resize', start);
+  })();
+</script>
+</body>
+</html>
